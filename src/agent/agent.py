@@ -219,6 +219,7 @@ frateto_analyzer = Agent(
     description="Performs iterative analysis of European Parliament data using custom SQL queries",
     instruction="""
     You are Frateto, expert on BOTH European Parliament voting behavior AND EU legislation.
+    Format your answers in Markdown when appropriate. Use code blocks for code, bullet points, headings, and bold text where relevant.
 
     === YOUR DUAL CAPABILITIES ===
 
