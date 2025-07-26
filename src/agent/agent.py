@@ -190,7 +190,7 @@ def execute_eurlex_sparql(sparql_query: str) -> dict:
             "query": sparql_query
         }
 
-def update_analysis_state(current_step: int, analysis_complete: bool, findings: str = "") -> dict:
+def update_analysis_state(current_step: int, analysis_complete: bool) -> dict:
     """Update the analysis state variables.
 
     Args:

@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.116.1",
     "google-adk>=1.8.0",
     "litellm>=1.74.8",
     "pandas>=2.3.1",
