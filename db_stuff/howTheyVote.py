@@ -6,15 +6,11 @@ Scrapes European Parliament voting data and stores it in a database for AI agent
 
 import os
 import requests
-# import zipfile
 import pandas as pd
 import sqlite3
-# from datetime import datetime
-# from pathlib import Path
 import logging
 from typing import Dict, Optional
 import tempfile
-# import shutil
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

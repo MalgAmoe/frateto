@@ -2,50 +2,27 @@
   "tables": {
     "countries": {
       "description": "EU member states and their country codes",
-      "columns": [
-        "code",
-        "iso_alpha_2",
-        "label"
-      ]
+      "columns": ["code", "iso_alpha_2", "label"]
     },
     "groups": {
       "description": "Political groups in the European Parliament (parties/coalitions)",
-      "columns": [
-        "code",
-        "official_label",
-        "label",
-        "short_label"
-      ]
+      "columns": ["code", "official_label", "label", "short_label"]
     },
     "committees": {
       "description": "Parliamentary committees responsible for specific policy areas",
-      "columns": [
-        "code",
-        "label",
-        "abbreviation"
-      ]
+      "columns": ["code", "label", "abbreviation"]
     },
     "eurovoc_concepts": {
       "description": "Standardized topic classifications for EU legislation",
-      "columns": [
-        "id",
-        "label"
-      ]
+      "columns": ["id", "label"]
     },
     "oeil_subjects": {
       "description": "Legislative procedure subjects from the Legislative Observatory",
-      "columns": [
-        "code",
-        "label"
-      ]
+      "columns": ["code", "label"]
     },
     "geo_areas": {
       "description": "Geographic entities (countries, regions) relevant to specific votes",
-      "columns": [
-        "code",
-        "label",
-        "iso_alpha_2"
-      ]
+      "columns": ["code", "label", "iso_alpha_2"]
     },
     "members": {
       "description": "Individual Members of European Parliament (MEPs) with personal information and country affiliation",
@@ -82,13 +59,7 @@
     },
     "group_memberships": {
       "description": "Historical record of which political group each MEP belonged to over time",
-      "columns": [
-        "member_id",
-        "group_code",
-        "term",
-        "start_date",
-        "end_date"
-      ]
+      "columns": ["member_id", "group_code", "term", "start_date", "end_date"]
     },
     "member_votes": {
       "description": "Individual voting positions (FOR/AGAINST/ABSTENTION) of each MEP on each vote",
@@ -102,31 +73,19 @@
     },
     "eurovoc_concept_votes": {
       "description": "Links votes to their policy topic categories",
-      "columns": [
-        "vote_id",
-        "eurovoc_concept_id"
-      ]
+      "columns": ["vote_id", "eurovoc_concept_id"]
     },
     "oeil_subject_votes": {
       "description": "Links votes to legislative procedure subjects",
-      "columns": [
-        "vote_id",
-        "oeil_subject_code"
-      ]
+      "columns": ["vote_id", "oeil_subject_code"]
     },
     "geo_area_votes": {
       "description": "Links votes to relevant geographic areas",
-      "columns": [
-        "vote_id",
-        "geo_area_code"
-      ]
+      "columns": ["vote_id", "geo_area_code"]
     },
     "responsible_committee_votes": {
       "description": "Links votes to the parliamentary committee responsible",
-      "columns": [
-        "vote_id",
-        "committee_code"
-      ]
+      "columns": ["vote_id", "committee_code"]
     }
   },
   "relationships": {
