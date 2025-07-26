@@ -8,8 +8,25 @@ from dotenv import load_dotenv
 from google.adk.agents import Agent, LoopAgent
 from google.adk.models.lite_llm import LiteLlm
 import sqlite3
+from datetime import date
 
 load_dotenv()
+
+def get_current_date() -> dict:
+    """Get the current date for temporal context in analysis.
+
+    Returns:
+        Dict containing the current date information
+    """
+    today = date.today()
+    return {
+        "current_date": today.isoformat(),  # YYYY-MM-DD format
+        "year": today.year,
+        "month": today.month,
+        "day": today.day,
+        "formatted_date": today.strftime("%B %d, %Y"),  # e.g., "July 26, 2025"
+        "explanation": f"Today is {today.strftime('%B %d, %Y')}"
+    }
 
 DB_PATH = "./db_stuff/parliament_votes.db"
 
@@ -208,6 +225,7 @@ sql_analyzer = Agent(
 
         Available tools:
         - execute_custom_sql: For database queries
+        - get_current_date: Gets the current date(YYYY-MM-DD)
         - update_analysis_state: For updating step tracking (MUST USE)
 
     Remember:
@@ -217,7 +235,8 @@ sql_analyzer = Agent(
     """,
     tools=[
         execute_custom_sql,
-        update_analysis_state
+        update_analysis_state,
+        get_current_date
     ],
     output_key="step_analysis"
 )
