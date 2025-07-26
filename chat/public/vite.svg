@@ -1,0 +1,22 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Face Circle -->
+  <circle cx="100" cy="100" r="80" fill="#FFD1A4" stroke="#000" stroke-width="2"/>
+
+  <!-- Left Eye -->
+  <circle cx="65" cy="80" r="15" fill="white" stroke="#000" stroke-width="2"/>
+  <circle cx="70" cy="80" r="5" fill="black"/>
+
+  <!-- Right Eye -->
+  <circle cx="135" cy="80" r="15" fill="white" stroke="#000" stroke-width="2"/>
+  <circle cx="130" cy="80" r="5" fill="black"/>
+
+  <!-- Eyebrows -->
+  <path d="M 50 60 Q 65 50 80 60" stroke="#000" stroke-width="3" fill="transparent"/>
+  <path d="M 120 60 Q 135 50 150 55" stroke="#000" stroke-width="3" fill="transparent"/>
+
+  <!-- Mouth (Suspicious Smirk) -->
+  <path d="M 80 130 Q 100 120 120 130" stroke="#000" stroke-width="3" fill="transparent"/>
+
+  <!-- Nose -->
+  <path d="M 100 95 Q 95 105 100 110" stroke="#000" stroke-width="2" fill="transparent"/>
+</svg>
