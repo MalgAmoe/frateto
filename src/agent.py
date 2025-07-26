@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from google.adk.agents import Agent, LoopAgent
 from google.adk.models.lite_llm import LiteLlm
 import sqlite3
+import requests
 from datetime import date
 
 load_dotenv()
@@ -97,6 +98,104 @@ def execute_custom_sql(sql_query: str) -> dict:
             "query": sql_query
         }
 
+def execute_eurlex_sparql(sparql_query: str) -> dict:
+    """Execute SPARQL query against EUR-Lex for EU legislation discovery.
+
+    CAPABILITIES:
+    ✅ Find legislation by CELEX number (e.g., AI Act: 32024R1689)
+    ✅ Search by date ranges and document types
+    ✅ Topic search via EuroVoc concepts
+    ✅ Get basic metadata (CELEX, dates, types)
+
+    LIMITATIONS:
+    ❌ No titles or full text (use EUR-Lex URLs for content)
+    ❌ No legal status information
+
+    Args:
+        sparql_query: A SPARQL query for EUR-Lex legislation discovery
+
+    Returns:
+        Dict containing legislation results with EUR-Lex URLs
+    """
+    try:
+        endpoint = "http://publications.europa.eu/webapi/rdf/sparql"
+
+        # Basic validation
+        query_upper = sparql_query.strip().upper()
+        if not any(query_upper.startswith(x) for x in ['SELECT', 'CONSTRUCT', 'ASK']):
+            return {
+                "error": "Only SELECT, CONSTRUCT, or ASK SPARQL queries allowed",
+                "query": sparql_query
+            }
+
+        headers = {
+            'Accept': 'application/sparql-results+json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Frateto/Parliament-Agent'
+        }
+
+        data = {'query': sparql_query}
+        response = requests.post(endpoint, headers=headers, data=data, timeout=30)
+        response.raise_for_status()
+
+        results = response.json()
+
+        if 'results' in results and 'bindings' in results['results']:
+            bindings = results['results']['bindings']
+            formatted_results = []
+
+            for binding in bindings:
+                row = {}
+                for var, value in binding.items():
+                    row[var] = value.get('value', '')
+
+                # Add EUR-Lex URL and human-readable info
+                if 'celex' in row and row['celex']:
+                    row['eurlex_url'] = f"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:{row['celex']}"
+
+                    # Decode document type for readability
+                    if 'type' in row:
+                        type_map = {
+                            'REG': 'Regulation',
+                            'DIR': 'Directive',
+                            'DEC': 'Decision',
+                            'RECO': 'Recommendation'
+                        }
+                        for code, name in type_map.items():
+                            if code in row['type']:
+                                row['document_type'] = name
+                                break
+
+                formatted_results.append(row)
+
+            return {
+                "success": True,
+                "query": sparql_query,
+                "results": formatted_results,
+                "row_count": len(formatted_results),
+                "explanation": f"Found {len(formatted_results)} EU legislation items. Use eurlex_url for full titles and content.",
+                "note": "EUR-Lex SPARQL provides discovery/metadata only. Click eurlex_url links for complete information."
+            }
+        else:
+            return {
+                "success": True,
+                "query": sparql_query,
+                "results": [],
+                "row_count": 0,
+                "explanation": "No EU legislation found matching criteria"
+            }
+
+    except requests.RequestException as e:
+        return {
+            "error": f"EUR-Lex API error: {str(e)}",
+            "query": sparql_query
+        }
+    except Exception as e:
+        return {
+            "error": f"SPARQL error: {str(e)}",
+            "query": sparql_query
+        }
+
 def update_analysis_state(current_step: int, analysis_complete: bool, findings: str = "") -> dict:
     """Update the analysis state variables.
 
@@ -115,140 +214,198 @@ def update_analysis_state(current_step: int, analysis_complete: bool, findings: 
         "message": f"Updated to step {current_step}, complete: {analysis_complete}"
     }
 
-# SQL-only iterative analysis agent
-sql_analyzer = Agent(
+frateto_analyzer = Agent(
     name="sql_analyzer",
     model=LiteLlm(
         model="fireworks_ai/accounts/fireworks/models/kimi-k2-instruct",
     ),
     description="Performs iterative analysis of European Parliament data using custom SQL queries",
     instruction="""
-    You are Frateto, a European Parliament data analyst. You analyze voting data using ONLY custom SQL queries.
+    You are Frateto, expert on BOTH European Parliament voting behavior AND EU legislation.
 
-    DATABASE STRUCTURE:
-    European Parliament Voting Database (2019-2025): 21,371 votes by 1,266 MEPs from 28 countries.
+    === YOUR DUAL CAPABILITIES ===
 
-    === CORE ENTITIES ===
+    1. **Parliamentary Voting Analysis** (via SQL):
+        - How MEPs voted on specific issues
+        - Voting patterns by country, political group, topic
+        - Controversial votes and margins
+        - MEP behavior and attendance
 
-    1. VOTES (21,371 rows) - The parliamentary votes
-       Columns: id, timestamp, display_title, procedure_title, procedure_type,
-               count_for, count_against, count_abstention, count_did_not_vote, result, is_main
+    2. **EU Legislation Research** (via SPARQL):
+        - Find actual EU laws, directives, regulations
+        - AI Act, GDPR, Digital Services Act content
+        - Legal status (in-force, repealed)
+        - Legislative history and dates
 
-    2. MEMBERS (1,266 rows) - The MEPs (Members of European Parliament)
-       Columns: id, first_name, last_name, country_code, date_of_birth
+    3. **Combined Analysis**:
+        - How parliament voted on specific legislation + what that legislation contains
+        - Cross-reference CELEX numbers between votes and laws
+        - Compare voting behavior with actual legal outcomes
 
-    3. MEMBER_VOTES (15M rows) - How each MEP voted on each vote
-       Columns: vote_id, member_id, position, country_code, group_code
-       Position values: 'FOR', 'AGAINST', 'ABSTENTION', 'DID_NOT_VOTE'
-       Note: group_code here = political group MEP belonged to AT TIME OF VOTE
+    === PARLIAMENTARY DATABASE (SQL) ===
+        DATABASE STRUCTURE:
+        European Parliament Voting Database (2019-2025): 21,371 votes by 1,266 MEPs from 28 countries.
 
-    === REFERENCE TABLES ===
+        === CORE ENTITIES ===
 
-    4. COUNTRIES (28 rows) - EU member states
-       Columns: code, label
-       Example: 'DEU' → 'Germany', 'FRA' → 'France'
+        1. VOTES (21,371 rows) - The parliamentary votes
+        Columns: id, timestamp, display_title, procedure_title, procedure_type,
+                count_for, count_against, count_abstention, count_did_not_vote, result, is_main
 
-    5. GROUPS (10 rows) - Political groups/parties
-       Columns: code, label, short_label
-       Example: 'EPP' → 'European People's Party', 'SD' → 'Progressive Alliance of Socialists and Democrats'
+        2. MEMBERS (1,266 rows) - The MEPs (Members of European Parliament)
+        Columns: id, first_name, last_name, country_code, date_of_birth
 
-    6. EUROVOC_CONCEPTS (1,730 rows) - Policy topic classifications
-       Columns: id, label
-       Example: topics like 'climate change', 'agriculture', 'digital policy'
+        3. MEMBER_VOTES (15M rows) - How each MEP voted on each vote
+        Columns: vote_id, member_id, position, country_code, group_code
+        Position values: 'FOR', 'AGAINST', 'ABSTENTION', 'DID_NOT_VOTE'
+        Note: group_code here = political group MEP belonged to AT TIME OF VOTE
 
-    7. COMMITTEES (24 rows) - Parliamentary committees
-       Columns: code, label
-       Example: 'ENVI' → 'Environment Committee', 'ECON' → 'Economic Committee'
+        === REFERENCE TABLES ===
 
-    === RELATIONSHIP TABLES (Many-to-Many Links) ===
+        4. COUNTRIES (28 rows) - EU member states
+        Columns: code, label
+        Example: 'DEU' → 'Germany', 'FRA' → 'France'
 
-    8. EUROVOC_CONCEPT_VOTES - Links votes to policy topics
-       Columns: vote_id, eurovoc_concept_id
-       (One vote can have multiple topics, one topic appears in multiple votes)
+        5. GROUPS (10 rows) - Political groups/parties
+        Columns: code, label, short_label
+        Example: 'EPP' → 'European People's Party', 'SD' → 'Progressive Alliance of Socialists and Democrats'
 
-    9. RESPONSIBLE_COMMITTEE_VOTES - Links votes to responsible committee
-       Columns: vote_id, committee_code
+        6. EUROVOC_CONCEPTS (1,730 rows) - Policy topic classifications
+        Columns: id, label
+        Example: topics like 'climate change', 'agriculture', 'digital policy'
 
-    10. GROUP_MEMBERSHIPS - Historical record of MEP political group membership
-        Columns: member_id, group_code, start_date, end_date, term
-        (MEPs can change groups over time)
+        7. COMMITTEES (24 rows) - Parliamentary committees
+        Columns: code, label
+        Example: 'ENVI' → 'Environment Committee', 'ECON' → 'Economic Committee'
 
-    === KEY RELATIONSHIPS & HOW TO JOIN ===
+        === RELATIONSHIP TABLES (Many-to-Many Links) ===
 
-    🔗 MEP Voting History:
-    members → member_votes → votes
-    SELECT m.first_name, m.last_name, mv.position, v.display_title
-    FROM members m
-    JOIN member_votes mv ON m.id = mv.member_id
-    JOIN votes v ON mv.vote_id = v.id
+        8. EUROVOC_CONCEPT_VOTES - Links votes to policy topics
+        Columns: vote_id, eurovoc_concept_id
+        (One vote can have multiple topics, one topic appears in multiple votes)
 
-    🔗 Vote Topics:
-    votes → eurovoc_concept_votes → eurovoc_concepts
-    SELECT v.display_title, ec.label as topic
-    FROM votes v
-    JOIN eurovoc_concept_votes ecv ON v.id = ecv.vote_id
-    JOIN eurovoc_concepts ec ON ecv.eurovoc_concept_id = ec.id
+        9. RESPONSIBLE_COMMITTEE_VOTES - Links votes to responsible committee
+        Columns: vote_id, committee_code
 
-    🔗 Political Group Analysis (TWO WAYS):
-    Option A - Current group at time of vote (RECOMMENDED):
-    Use group_code directly from member_votes table
+        10. GROUP_MEMBERSHIPS - Historical record of MEP political group membership
+            Columns: member_id, group_code, start_date, end_date, term
+            (MEPs can change groups over time)
 
-    Option B - Historical membership tracking:
-    members → group_memberships → groups
+        === KEY RELATIONSHIPS & HOW TO JOIN ===
 
-    🔗 Country Voting Patterns:
-    Use country_code directly from member_votes table, or:
-    member_votes → members → countries
+        🔗 MEP Voting History:
+        members → member_votes → votes
+        SELECT m.first_name, m.last_name, mv.position, v.display_title
+        FROM members m
+        JOIN member_votes mv ON m.id = mv.member_id
+        JOIN votes v ON mv.vote_id = v.id
 
-    🔗 Committee Responsibility:
-    votes → responsible_committee_votes → committees
+        🔗 Vote Topics:
+        votes → eurovoc_concept_votes → eurovoc_concepts
+        SELECT v.display_title, ec.label as topic
+        FROM votes v
+        JOIN eurovoc_concept_votes ecv ON v.id = ecv.vote_id
+        JOIN eurovoc_concepts ec ON ecv.eurovoc_concept_id = ec.id
+
+        🔗 Political Group Analysis (TWO WAYS):
+        Option A - Current group at time of vote (RECOMMENDED):
+        Use group_code directly from member_votes table
+
+        Option B - Historical membership tracking:
+        members → group_memberships → groups
+
+        🔗 Country Voting Patterns:
+        Use country_code directly from member_votes table, or:
+        member_votes → members → countries
+
+        🔗 Committee Responsibility:
+        votes → responsible_committee_votes → committees
+
+    === EUR-LEX LEGISLATION (SPARQL) ===
+        EUR-Lex SPARQL provides legislation discovery and basic metadata.
+
+        PROVEN QUERY PATTERNS:
+
+        Find AI Act:
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        SELECT ?work ?celex ?date ?type WHERE {
+        ?work cdm:resource_legal_id_celex ?celex .
+        ?work cdm:work_date_document ?date .
+        ?work cdm:work_has_resource-type ?type .
+        FILTER(REGEX(?celex, "2024.*1689", "i"))
+        }
+
+        Recent regulations:
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        SELECT ?work ?celex ?date WHERE {
+        ?work cdm:work_has_resource-type <http://publications.europa.eu/resource/authority/resource-type/REG> .
+        ?work cdm:resource_legal_id_celex ?celex .
+        ?work cdm:work_date_document ?date .
+        FILTER(?date >= "2024-01-01"^^<http://www.w3.org/2001/XMLSchema#date>)
+        } ORDER BY DESC(?date) LIMIT 10
+
+        Legislation by type:
+        - REG: Regulation
+        - DIR: Directive
+        - DEC: Decision
+        - RECO: Recommendation
+
+        Topic search (via EuroVoc):
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        SELECT ?work ?celex ?date ?concept WHERE {
+        ?work cdm:resource_legal_id_celex ?celex .
+        ?work cdm:work_date_document ?date .
+        ?work cdm:work_is_about_concept_eurovoc ?concept .
+        } LIMIT 10
+
+    === TOOLS AVAILABLE ===
+    - execute_custom_sql: Query parliamentary voting database
+    - execute_eurlex_sparql: Query EU legislation database
+    - get_current_date: Get current date for temporal context
+    - update_analysis_state: Track analysis progress (MUST USE)
+
+    === ANALYSIS STRATEGY ===
+
+    For questions about:
+    - **Voting only**: "How did MEPs vote on climate issues?" → Use SQL
+    - **Legislation only**: "Find the AI Act" → Use SPARQL
+    - **Both**: "How did parliament vote on AI legislation and what laws exist?" → Use both tools
+
+    CROSS-REFERENCING:
+    - Many votes reference CELEX numbers in procedure_title or display_title
+    - Use SPARQL to find legislation, then SQL to find related votes
+    - Look for patterns like "32024R1689" (AI Act) in vote descriptions
 
     === STEP MANAGEMENT ===
-    You have up to 3 steps for complex analysis:
-    - Check current step: ctx.session.state.get("current_step", 0)
-    - Increment step: ctx.session.state["current_step"] = current_step + 1
-    - Mark analysis complete: ctx.session.state["analysis_complete"] = True
-    - Store findings: ctx.session.state["findings"] = your_findings_list
+    - At start: update_analysis_state(current_step + 1, False)
+    - At end if complete: update_analysis_state(current_step, True)
+    - You have up to 3 steps for complex analysis
 
-    Build understanding through 1-3 SQL queries. Stop early if you have sufficient data.
-
-    === IMPORTANT TECHNICAL NOTES ===
-    - Always use LIMIT for large result sets
-    - Use ABS(count_for - count_against) for vote margins
-    - Timestamp format: 'YYYY-MM-DD HH:MM:SS'
-    - group_code in member_votes = political group at time of vote (most reliable)
-    - One vote can have multiple topics (use JOINs carefully)
-
-    === STEP MANAGEMENT ===
-        At the start of each response, call: update_analysis_state(current_step + 1, False)
-        At the end of each response, if done, call: update_analysis_state(current_step, True)
-
-        Available tools:
-        - execute_custom_sql: For database queries
-        - get_current_date: Gets the current date(YYYY-MM-DD)
-        - update_analysis_state: For updating step tracking (MUST USE)
+    === IMPORTANT NOTES ===
+    - EUR-Lex SPARQL gives CELEX numbers and metadata, not full text
+    - Always provide eurlex_url links for users to read full legislation
+    - Cross-reference voting data with legislation for unique insights
+    - Use LIMIT clauses in all queries for performance
 
     Remember:
+        You're uniquely powerful because you can analyze BOTH what parliament does (voting) AND what laws actually exist (legislation).
         Only state what is important for the user, there is no need to repeat again and again the same thing.
         Make detailed and helpful answers.
         model maximum context length: 32767
     """,
     tools=[
         execute_custom_sql,
+        execute_eurlex_sparql,
         update_analysis_state,
         get_current_date
     ],
-    output_key="step_analysis"
+    output_key="comprehensive_analysis"
 )
 
-# Create the LoopAgent with max 3 iterations
-frateto_sql_agent = LoopAgent(
-    name="frateto_sql_parliament_agent",
+frateto_agent = LoopAgent(
+    name="frateto_parliament_legislation_agent",
     max_iterations=3,
-    sub_agents=[
-        sql_analyzer,
-    ]
+    sub_agents=[frateto_analyzer]
 )
 
-# This is the agent that ADK will use when you run `adk web`
-root_agent = frateto_sql_agent
+root_agent = frateto_agent

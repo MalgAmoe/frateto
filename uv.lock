@@ -324,6 +324,7 @@ dependencies = [
     { name = "litellm" },
     { name = "pandas" },
     { name = "python-dotenv" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -332,6 +333,7 @@ requires-dist = [
     { name = "litellm", specifier = ">=1.74.8" },
     { name = "pandas", specifier = ">=2.3.1" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
+    { name = "requests", specifier = ">=2.32.4" },
 ]
 
 [[package]]
