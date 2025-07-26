@@ -5,12 +5,8 @@ Run with: adk web
 """
 
 from dotenv import load_dotenv
-from google.adk.agents import Agent, LoopAgent, BaseAgent
+from google.adk.agents import Agent, LoopAgent
 from google.adk.models.lite_llm import LiteLlm
-from google.adk.events import Event, EventActions
-from google.adk.agents.invocation_context import InvocationContext
-from google.genai import types
-from typing import AsyncGenerator
 import sqlite3
 
 load_dotenv()
@@ -84,30 +80,30 @@ def execute_custom_sql(sql_query: str) -> dict:
             "query": sql_query
         }
 
-# Custom agent to check if analysis should continue
-class AnalysisDecisionAgent(BaseAgent):
-    """Agent that decides whether to continue analysis or stop"""
+def update_analysis_state(current_step: int, analysis_complete: bool, findings: str = "") -> dict:
+    """Update the analysis state variables.
 
-    async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[Event, None]:
-        current_step = ctx.session.state.get("current_step", 0)
-        analysis_complete = ctx.session.state.get("analysis_complete", False)
+    Args:
+        current_step: The current step number (increment by 1 each call)
+        analysis_complete: True if analysis is complete, False if more steps needed
+        findings: Summary of current findings
 
-        # Let the agent decide based on its findings
-        decision_message = f"Step {current_step} completed. Analysis marked as complete: {analysis_complete}"
-
-        # Stop if analysis is marked complete by the analyzer or we've reached max steps
-        should_stop = analysis_complete or current_step >= 5
-
-        yield Event(
-            author=self.name,
-            content=types.Content(parts=[types.Part(text=decision_message)]),
-            actions=EventActions(escalate=should_stop)
-        )
+    Returns:
+        Dict confirming the state update
+    """
+    return {
+        "success": True,
+        "step": current_step,
+        "complete": analysis_complete,
+        "message": f"Updated to step {current_step}, complete: {analysis_complete}"
+    }
 
 # SQL-only iterative analysis agent
 sql_analyzer = Agent(
     name="sql_analyzer",
-    model=LiteLlm(model="fireworks_ai/accounts/fireworks/models/kimi-k2-instruct"),
+    model=LiteLlm(
+        model="fireworks_ai/accounts/fireworks/models/kimi-k2-instruct",
+    ),
     description="Performs iterative analysis of European Parliament data using custom SQL queries",
     instruction="""
     You are Frateto, a European Parliament data analyst. You analyze voting data using ONLY custom SQL queries.
@@ -206,12 +202,23 @@ sql_analyzer = Agent(
     - group_code in member_votes = political group at time of vote (most reliable)
     - One vote can have multiple topics (use JOINs carefully)
 
+    === STEP MANAGEMENT ===
+        At the start of each response, call: update_analysis_state(current_step + 1, False)
+        At the end of each response, if done, call: update_analysis_state(current_step, True)
+
+        Available tools:
+        - execute_custom_sql: For database queries
+        - update_analysis_state: For updating step tracking (MUST USE)
+
     Remember:
         Only state what is important for the user, there is no need to repeat again and again the same thing.
         Make detailed and helpful answers.
         model maximum context length: 32767
     """,
-    tools=[execute_custom_sql],
+    tools=[
+        execute_custom_sql,
+        update_analysis_state
+    ],
     output_key="step_analysis"
 )
 
@@ -221,7 +228,6 @@ frateto_sql_agent = LoopAgent(
     max_iterations=3,
     sub_agents=[
         sql_analyzer,
-        AnalysisDecisionAgent(name="decision_agent")
     ]
 )
 
