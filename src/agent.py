@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Frateto Parliament Agent with LoopAgent using only custom SQL queries
-Run with: adk web
-"""
-
 from dotenv import load_dotenv
 from google.adk.agents import Agent, LoopAgent
 from google.adk.models.lite_llm import LiteLlm
@@ -216,8 +210,11 @@ def update_analysis_state(current_step: int, analysis_complete: bool, findings: 
 
 frateto_analyzer = Agent(
     name="sql_analyzer",
+    # model=LiteLlm(
+    #     model="fireworks_ai/accounts/fireworks/models/kimi-k2-instruct",
+    # ),
     model=LiteLlm(
-        model="fireworks_ai/accounts/fireworks/models/kimi-k2-instruct",
+        model="openai/gpt-4.1-mini",
     ),
     description="Performs iterative analysis of European Parliament data using custom SQL queries",
     instruction="""
