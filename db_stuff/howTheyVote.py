@@ -156,8 +156,8 @@ class HowTheyVoteScraper:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            # Enable foreign key constraints
-            cursor.execute("PRAGMA foreign_keys = ON")
+            # DISABLE foreign key constraints during schema creation
+            cursor.execute("PRAGMA foreign_keys = OFF")
 
             # Define creation order - parent tables first, then children
             table_creation_order = [
@@ -182,14 +182,17 @@ class HowTheyVoteScraper:
                 'responsible_committee_votes' # depends on votes, committees
             ]
 
+            # Drop all tables in reverse order to avoid FK conflicts
+            for table_name in reversed(table_creation_order):
+                if table_name not in self.table_schemas:
+                    continue
+                cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+
             for table_name in table_creation_order:
                 if table_name not in self.table_schemas:
                     continue
 
                 schema = self.table_schemas[table_name]
-
-                # Drop table if exists
-                cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
 
                 # Create table with proper foreign keys
                 columns = []
@@ -228,6 +231,9 @@ class HowTheyVoteScraper:
 
             for index_sql in indexes:
                 cursor.execute(index_sql)
+
+            # RE-ENABLE foreign key constraints after schema is created
+            cursor.execute("PRAGMA foreign_keys = ON")
 
             conn.commit()
             conn.close()

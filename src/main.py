@@ -3,16 +3,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import json
+import os
 
 from runner import run_agent
 
-app = FastAPI()
+app = FastAPI(title="Frateto Chat API", version="1.0.0")
+
+# CORS configuration for production
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+CORS_ORIGINS = [
+    FRONTEND_URL,  # Production frontend
+    "https://*.vercel.app",  # Vercel deployments
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -20,6 +28,10 @@ class ChatRequest(BaseModel):
     message: str
     user_id: str
     session_id: str
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
@@ -32,6 +44,7 @@ async def chat(request: ChatRequest):
         word_count = 0
         try:
             async for message in run_agent(session_id, user_id, user_message):
+                # add "\n\n" to separate messages in the frontend
                 escaped_message = json.dumps(message + "\n\n")
                 word_count += len(escaped_message.split())
                 yield f'0:{escaped_message}\n'
@@ -53,4 +66,5 @@ async def chat(request: ChatRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
