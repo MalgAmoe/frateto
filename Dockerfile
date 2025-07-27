@@ -1,8 +1,17 @@
+FROM node:20-slim AS frontend-builder
+
+WORKDIR /app/chat
+COPY chat/package*.json ./
+RUN npm ci
+COPY chat/ ./
+RUN npm run build
+
+# Main application stage
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies including curl for health checks
+# Install system dependencies (no Node.js needed in final image)
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -21,7 +30,10 @@ RUN pip install --user uv
 ENV PATH="/home/appuser/.local/bin:$PATH"
 RUN uv sync --frozen
 
-# Copy application code
+# Copy built frontend from build stage (no source code, just built assets)
+COPY --from=frontend-builder --chown=appuser:appuser /app/chat/dist ./static
+
+# Copy Python application code
 COPY --chown=appuser:appuser src/ ./src/
 COPY --chown=appuser:appuser db_stuff/ ./db_stuff/
 

@@ -4,10 +4,10 @@ import { StarterQuestions } from "@llamaindex/chat-ui/widgets";
 import { useChat } from "@ai-sdk/react";
 import { Moon, Sun } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
 export default function FratetoChat() {
   const [isDark, setIsDark] = useState(true);
+  const [showStarters, setShowStarters] = useState(true);
+  const sessionData = window.FRATETO_SESSION;
 
   useEffect(() => {
     document.documentElement.classList.add("dark");
@@ -32,7 +32,7 @@ export default function FratetoChat() {
   };
 
   const handler = useChat({
-    api: `${API_URL}/api/chat`,
+    api: `/api/chat`,
     fetch: async (url, options) => {
       try {
         if (!options?.body) {
@@ -49,7 +49,7 @@ export default function FratetoChat() {
 
         const customBody = {
           message: lastMessage.content,
-          user_id: "1",
+          user_id: sessionData || "1",
           session_id: body.id || "1",
         };
 
@@ -134,9 +134,8 @@ export default function FratetoChat() {
         {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
       </button>
 
-      {/* Show starter questions when no messages, otherwise show chat */}
-      {handler.messages.length === 0 ? (
-        <div className="h-full flex flex-col items-center justify-center p-8">
+      {showStarters && (
+        <div className="absolute inset-0 z-20 bg-background flex flex-col items-center justify-center p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
               🏛️ Frateto Chat
@@ -149,18 +148,31 @@ export default function FratetoChat() {
             </p>
           </div>
 
-          <StarterQuestions
-            questions={starterQuestions}
-            append={handler.append}
-          />
-        </div>
-      ) : (
-        <div className="h-full flex justify-center">
           <div className="w-full max-w-4xl">
-            <ChatSection handler={handler} className="h-full" />
+            <StarterQuestions
+              questions={starterQuestions}
+              append={(value) => {
+                setShowStarters(false);
+                return handler.append(value);
+              }}
+            />
           </div>
+          <button
+            onClick={() => setShowStarters(false)}
+            className="mt-6 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+            aria-label="Close preset questions"
+          >
+            Close preset questions
+          </button>
         </div>
       )}
+
+      {/* Main chat interface */}
+      <div className="h-full flex justify-center">
+        <div className="w-full max-w-4xl">
+          <ChatSection handler={handler} className="h-full" />
+        </div>
+      </div>
     </div>
   );
 }
