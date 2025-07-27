@@ -210,11 +210,8 @@ def update_analysis_state(current_step: int, analysis_complete: bool) -> dict:
 
 frateto_analyzer = Agent(
     name="sql_analyzer",
-    # model=LiteLlm(
-    #     model="fireworks_ai/accounts/fireworks/models/kimi-k2-instruct",
-    # ),
     model=LiteLlm(
-        model="openai/gpt-4.1-mini",
+        model="fireworks_ai/accounts/fireworks/models/kimi-k2-instruct",
     ),
     description="Performs iterative analysis of European Parliament data using custom SQL queries",
     instruction="""

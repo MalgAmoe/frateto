@@ -4,6 +4,8 @@ import { StarterQuestions } from "@llamaindex/chat-ui/widgets";
 import { useChat } from "@ai-sdk/react";
 import { Moon, Sun } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 export default function FratetoChat() {
   const [isDark, setIsDark] = useState(true);
 
@@ -30,7 +32,7 @@ export default function FratetoChat() {
   };
 
   const handler = useChat({
-    api: "http://localhost:8000/api/chat",
+    api: `${API_URL}/api/chat`,
     fetch: async (url, options) => {
       try {
         if (!options?.body) {
@@ -51,10 +53,59 @@ export default function FratetoChat() {
           session_id: body.id || "1",
         };
 
-        return fetch(url, {
+        const response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(customBody),
+        });
+
+        // Create a custom readable stream that splits messages
+        const reader = response.body?.getReader();
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+
+        let buffer = "";
+        let messageCount = 0;
+
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              while (true) {
+                const { done, value } = await reader!.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                  if (line.startsWith("0:")) {
+                    // Check if this should be a new message
+                    if (messageCount > 0) {
+                      // End current message and start new one
+                      controller.enqueue(
+                        encoder.encode(
+                          `d:{"finishReason":"continue","usage":{"promptTokens":5,"completionTokens":10}}\n`,
+                        ),
+                      );
+                      controller.enqueue(encoder.encode(`0:""\n`)); // New message separator
+                    }
+                    controller.enqueue(encoder.encode(line + "\n"));
+                    messageCount++;
+                  } else {
+                    controller.enqueue(encoder.encode(line + "\n"));
+                  }
+                }
+              }
+              controller.close();
+            } catch (error) {
+              controller.error(error);
+            }
+          },
+        });
+
+        return new Response(stream, {
+          headers: response.headers,
         });
       } catch (error) {
         console.error("Chat error:", error);
@@ -88,7 +139,7 @@ export default function FratetoChat() {
         <div className="h-full flex flex-col items-center justify-center p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              🏛️ Frateto
+              🏛️ Frateto Chat
             </h1>
             <p className="text-muted-foreground text-lg">
               Your AI assistant for EU Parliament analysis
@@ -104,7 +155,11 @@ export default function FratetoChat() {
           />
         </div>
       ) : (
-        <ChatSection handler={handler} className="h-full" />
+        <div className="h-full flex justify-center">
+          <div className="w-full max-w-4xl">
+            <ChatSection handler={handler} className="h-full" />
+          </div>
+        </div>
       )}
     </div>
   );

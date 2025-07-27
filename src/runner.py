@@ -8,7 +8,7 @@ APP_NAME = "frateto"
 session_service = InMemorySessionService()
 runner = Runner(agent=root_agent, session_service=session_service, app_name=APP_NAME)
 
-async def run_agent(session_id: str, user_id: str, user_message: str) -> str:
+async def run_agent(session_id: str, user_id: str, user_message: str):
     """Simple function to run the agent and return the response"""
 
     session = await session_service.get_session(
@@ -29,8 +29,15 @@ async def run_agent(session_id: str, user_id: str, user_message: str) -> str:
     )
 
     async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
-        if event.is_final_response() and event.content:
+        if not event.is_final_response() and event.content:
+            # check if message is text for the user
+            if event.content and event.content.parts and event.content.parts[0].text:
+                yield event.content.parts[0].text
+            # check if message is a function call
+            elif event.content and event.content.parts and event.content.parts[0].function_response:
+                yield f"*{event.content.parts[0].function_response.name}*"
+        elif event.is_final_response() and event.content:
             if event.content.parts and event.content.parts[0].text:
-                return event.content.parts[0].text
-
-    return "No response received"
+                # return the query text and finish conversation
+                yield event.content.parts[0].text
+                break

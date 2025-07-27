@@ -27,22 +27,24 @@ async def chat(request: ChatRequest):
     user_message = request.message
     user_id = request.user_id
     session_id = request.session_id
-    result = await run_agent(session_id, user_id, user_message)
 
-    def generate_stream():
-        # Properly escape the content for JSON
-        escaped_result = json.dumps(result)
-        yield f'0:{escaped_result}\n'
+    async def generate_stream():
+        word_count = 0
+        try:
+            async for message in run_agent(session_id, user_id, user_message):
+                escaped_message = json.dumps(message + "\n\n")
+                word_count += len(escaped_message.split())
+                yield f'0:{escaped_message}\n'
 
-        # Send finish signal
-        word_count = len(result.split())
-        yield f'd:{{"finishReason":"stop","usage":{{"promptTokens":10,"completionTokens":{word_count}}}}}\n'
+            # Send finish signal after all messages
+            yield f'd:{{"finishReason":"stop","usage":{{"promptTokens":10,"completionTokens":{word_count}}}}}\n'
 
-    return StreamingResponse(
-        generate_stream(),
-        media_type="text/plain",
-        headers={"X-Vercel-AI-Data-Stream": "v1"}
-    )
+        except Exception as e:
+            print(f"Streaming error: {e}")
+            error_msg = json.dumps(f"Error: {str(e)}")
+            yield f'0:{error_msg}\n'
+            yield 'd:{{"finishReason":"error","usage":{{"promptTokens":0,"completionTokens":0}}}}\n'
+
     return StreamingResponse(
         generate_stream(),
         media_type="text/plain",
