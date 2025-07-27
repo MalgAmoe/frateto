@@ -71,15 +71,15 @@ async def serve_index():
     if not os.path.exists("static/index.html"):
         raise HTTPException(status_code=404, detail="Frontend not built. Run ./build.sh first!")
 
-    # remove session is not active for 5 min
+    # remove session is not active for 15 min
     now = datetime.now().timestamp()
-    to_delete = [user_id for user_id, stamp in active_sessions.items() if stamp + 60 * 5 < now]
+    to_delete = [user_id for user_id, stamp in active_sessions.items() if stamp + 60 * 15 < now]
 
     for user_id in to_delete:
         del active_sessions[user_id]
 
-    # limit to 50 concurrent users
-    if len(active_sessions) >= 50:
+    # limit to 20 concurrent users
+    if len(active_sessions) >= 20:
         html_content = """
             <html>
                 <head>

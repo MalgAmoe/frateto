@@ -116,12 +116,14 @@ export default function FratetoChat() {
 
   // EU Parliament starter questions
   const starterQuestions = [
-    "What are the latest votes on climate change legislation?",
-    "Show me voting patterns by political groups this month",
     "Which countries voted against recent AI regulation proposals?",
-    "What are the most controversial votes in the last quarter?",
-    "Analyze voting behavior on Ukraine-related resolutions",
+    "What are the most controversial votes in the last 6 month?",
+    "Show me recent votes on climate and environmental protection",
+    "Show voting patterns by country on Ukraine-related resolutions",
+    "What digital rights and privacy laws are being debated?",
+    "Compare voting behavior before and after 2024 elections",
     "Show me abstention patterns in agricultural policy votes",
+    "Which parliamentary committees handle education and research funding?",
   ];
 
   return (

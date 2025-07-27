@@ -1,0 +1,902 @@
+{
+  "tables": [
+    "committees",
+    "countries",
+    "eurovoc_concept_votes",
+    "eurovoc_concepts",
+    "geo_area_votes",
+    "geo_areas",
+    "group_memberships",
+    "groups",
+    "member_votes",
+    "members",
+    "oeil_subject_votes",
+    "oeil_subjects",
+    "responsible_committee_votes",
+    "votes"
+  ],
+  "schemas": {
+    "committees": "CREATE TABLE committees (\ncode TEXT PRIMARY KEY,\nlabel TEXT,\nabbreviation TEXT\n)",
+    "countries": "CREATE TABLE countries (\ncode TEXT PRIMARY KEY,\niso_alpha_2 TEXT,\nlabel TEXT\n)",
+    "eurovoc_concept_votes": "CREATE TABLE eurovoc_concept_votes (\nvote_id INTEGER,\neurovoc_concept_id TEXT,\nFOREIGN KEY (vote_id) REFERENCES votes(id),\nFOREIGN KEY (eurovoc_concept_id) REFERENCES eurovoc_concepts(id)\n)",
+    "eurovoc_concepts": "CREATE TABLE eurovoc_concepts (\nid TEXT PRIMARY KEY,\nlabel TEXT\n)",
+    "geo_area_votes": "CREATE TABLE geo_area_votes (\nvote_id INTEGER,\ngeo_area_code TEXT,\nFOREIGN KEY (vote_id) REFERENCES votes(id),\nFOREIGN KEY (geo_area_code) REFERENCES geo_areas(code)\n)",
+    "geo_areas": "CREATE TABLE geo_areas (\ncode TEXT PRIMARY KEY,\nlabel TEXT,\niso_alpha_2 TEXT\n)",
+    "group_memberships": "CREATE TABLE group_memberships (\nmember_id INTEGER,\ngroup_code TEXT,\nterm INTEGER,\nstart_date DATE,\nend_date DATE,\nFOREIGN KEY (member_id) REFERENCES members(id),\nFOREIGN KEY (group_code) REFERENCES groups(code)\n)",
+    "groups": "CREATE TABLE groups (\ncode TEXT PRIMARY KEY,\nofficial_label TEXT,\nlabel TEXT,\nshort_label TEXT\n)",
+    "member_votes": "CREATE TABLE member_votes (\nvote_id INTEGER,\nmember_id INTEGER,\nposition TEXT,\ncountry_code TEXT,\ngroup_code TEXT,\nPRIMARY KEY (vote_id, member_id) ,\nFOREIGN KEY (vote_id) REFERENCES votes(id),\nFOREIGN KEY (member_id) REFERENCES members(id)\n)",
+    "members": "CREATE TABLE members (\nid INTEGER PRIMARY KEY,\nfirst_name TEXT,\nlast_name TEXT,\ncountry_code TEXT,\ndate_of_birth DATE,\nemail TEXT,\nfacebook TEXT,\ntwitter TEXT,\nFOREIGN KEY (country_code) REFERENCES countries(code)\n)",
+    "oeil_subject_votes": "CREATE TABLE oeil_subject_votes (\nvote_id INTEGER,\noeil_subject_code TEXT,\nFOREIGN KEY (vote_id) REFERENCES votes(id),\nFOREIGN KEY (oeil_subject_code) REFERENCES oeil_subjects(code)\n)",
+    "oeil_subjects": "CREATE TABLE oeil_subjects (\ncode TEXT PRIMARY KEY,\nlabel TEXT\n)",
+    "responsible_committee_votes": "CREATE TABLE responsible_committee_votes (\nvote_id INTEGER,\ncommittee_code TEXT,\nFOREIGN KEY (vote_id) REFERENCES votes(id),\nFOREIGN KEY (committee_code) REFERENCES committees(code)\n)",
+    "votes": "CREATE TABLE votes (\nid INTEGER PRIMARY KEY,\ntimestamp DATETIME,\ndisplay_title TEXT,\nreference TEXT,\ndescription TEXT,\nis_main BOOLEAN,\nprocedure_reference TEXT,\nprocedure_title TEXT,\nprocedure_type TEXT,\nprocedure_stage TEXT,\ncount_for INTEGER,\ncount_against INTEGER,\ncount_abstention INTEGER,\ncount_did_not_vote INTEGER,\nresult TEXT\n)"
+  },
+  "columns": {
+    "committees": [
+      [
+        0,
+        "code",
+        "TEXT",
+        0,
+        null,
+        1
+      ],
+      [
+        1,
+        "label",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        2,
+        "abbreviation",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "countries": [
+      [
+        0,
+        "code",
+        "TEXT",
+        0,
+        null,
+        1
+      ],
+      [
+        1,
+        "iso_alpha_2",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        2,
+        "label",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "eurovoc_concept_votes": [
+      [
+        0,
+        "vote_id",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        1,
+        "eurovoc_concept_id",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "eurovoc_concepts": [
+      [
+        0,
+        "id",
+        "TEXT",
+        0,
+        null,
+        1
+      ],
+      [
+        1,
+        "label",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "geo_area_votes": [
+      [
+        0,
+        "vote_id",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        1,
+        "geo_area_code",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "geo_areas": [
+      [
+        0,
+        "code",
+        "TEXT",
+        0,
+        null,
+        1
+      ],
+      [
+        1,
+        "label",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        2,
+        "iso_alpha_2",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "group_memberships": [
+      [
+        0,
+        "member_id",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        1,
+        "group_code",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        2,
+        "term",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        3,
+        "start_date",
+        "DATE",
+        0,
+        null,
+        0
+      ],
+      [
+        4,
+        "end_date",
+        "DATE",
+        0,
+        null,
+        0
+      ]
+    ],
+    "groups": [
+      [
+        0,
+        "code",
+        "TEXT",
+        0,
+        null,
+        1
+      ],
+      [
+        1,
+        "official_label",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        2,
+        "label",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        3,
+        "short_label",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "member_votes": [
+      [
+        0,
+        "vote_id",
+        "INTEGER",
+        0,
+        null,
+        1
+      ],
+      [
+        1,
+        "member_id",
+        "INTEGER",
+        0,
+        null,
+        2
+      ],
+      [
+        2,
+        "position",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        3,
+        "country_code",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        4,
+        "group_code",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "members": [
+      [
+        0,
+        "id",
+        "INTEGER",
+        0,
+        null,
+        1
+      ],
+      [
+        1,
+        "first_name",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        2,
+        "last_name",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        3,
+        "country_code",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        4,
+        "date_of_birth",
+        "DATE",
+        0,
+        null,
+        0
+      ],
+      [
+        5,
+        "email",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        6,
+        "facebook",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        7,
+        "twitter",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "oeil_subject_votes": [
+      [
+        0,
+        "vote_id",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        1,
+        "oeil_subject_code",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "oeil_subjects": [
+      [
+        0,
+        "code",
+        "TEXT",
+        0,
+        null,
+        1
+      ],
+      [
+        1,
+        "label",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "responsible_committee_votes": [
+      [
+        0,
+        "vote_id",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        1,
+        "committee_code",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ],
+    "votes": [
+      [
+        0,
+        "id",
+        "INTEGER",
+        0,
+        null,
+        1
+      ],
+      [
+        1,
+        "timestamp",
+        "DATETIME",
+        0,
+        null,
+        0
+      ],
+      [
+        2,
+        "display_title",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        3,
+        "reference",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        4,
+        "description",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        5,
+        "is_main",
+        "BOOLEAN",
+        0,
+        null,
+        0
+      ],
+      [
+        6,
+        "procedure_reference",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        7,
+        "procedure_title",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        8,
+        "procedure_type",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        9,
+        "procedure_stage",
+        "TEXT",
+        0,
+        null,
+        0
+      ],
+      [
+        10,
+        "count_for",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        11,
+        "count_against",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        12,
+        "count_abstention",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        13,
+        "count_did_not_vote",
+        "INTEGER",
+        0,
+        null,
+        0
+      ],
+      [
+        14,
+        "result",
+        "TEXT",
+        0,
+        null,
+        0
+      ]
+    ]
+  },
+  "row_counts": {
+    "committees": 24,
+    "countries": 28,
+    "eurovoc_concept_votes": 62517,
+    "eurovoc_concepts": 1730,
+    "geo_area_votes": 4962,
+    "geo_areas": 158,
+    "group_memberships": 1861,
+    "groups": 10,
+    "member_votes": 15117795,
+    "members": 1266,
+    "oeil_subject_votes": 39804,
+    "oeil_subjects": 366,
+    "responsible_committee_votes": 14965,
+    "votes": 21371
+  },
+  "samples": {
+    "committees": {
+      "columns": [
+        "code",
+        "label",
+        "abbreviation"
+      ],
+      "rows": [
+        [
+          "AFCO",
+          "Committee on Constitutional Affairs",
+          "AFCO"
+        ],
+        [
+          "AFET",
+          "Committee on Foreign Affairs",
+          "AFET"
+        ]
+      ]
+    },
+    "countries": {
+      "columns": [
+        "code",
+        "iso_alpha_2",
+        "label"
+      ],
+      "rows": [
+        [
+          "LUX",
+          "LU",
+          "Luxembourg"
+        ],
+        [
+          "BEL",
+          "BE",
+          "Belgium"
+        ]
+      ]
+    },
+    "eurovoc_concept_votes": {
+      "columns": [
+        "vote_id",
+        "eurovoc_concept_id"
+      ],
+      "rows": [
+        [
+          108563,
+          "5550"
+        ],
+        [
+          108563,
+          "616"
+        ]
+      ]
+    },
+    "eurovoc_concepts": {
+      "columns": [
+        "id",
+        "label"
+      ],
+      "rows": [
+        [
+          "1002",
+          "long-term financing"
+        ],
+        [
+          "1005",
+          "EU financing"
+        ]
+      ]
+    },
+    "geo_area_votes": {
+      "columns": [
+        "vote_id",
+        "geo_area_code"
+      ],
+      "rows": [
+        [
+          108530,
+          "VEN"
+        ],
+        [
+          108531,
+          "VEN"
+        ]
+      ]
+    },
+    "geo_areas": {
+      "columns": [
+        "code",
+        "label",
+        "iso_alpha_2"
+      ],
+      "rows": [
+        [
+          "AFG",
+          "Afghanistan",
+          "AF"
+        ],
+        [
+          "AGO",
+          "Angola",
+          "AO"
+        ]
+      ]
+    },
+    "group_memberships": {
+      "columns": [
+        "member_id",
+        "group_code",
+        "term",
+        "start_date",
+        "end_date"
+      ],
+      "rows": [
+        [
+          840,
+          "RENEW",
+          9,
+          "2019-07-02",
+          "2024-07-15"
+        ],
+        [
+          840,
+          "RENEW",
+          10,
+          "2024-07-16",
+          null
+        ]
+      ]
+    },
+    "groups": {
+      "columns": [
+        "code",
+        "official_label",
+        "label",
+        "short_label"
+      ],
+      "rows": [
+        [
+          "RENEW",
+          "Renew Europe Group",
+          "Renew Europe",
+          "Renew"
+        ],
+        [
+          "SD",
+          "Group of the Progressive Alliance of Socialists and Democrats in the European Parliament",
+          "Progressive Alliance of Socialists and Democrats",
+          "S&D"
+        ]
+      ]
+    },
+    "member_votes": {
+      "columns": [
+        "vote_id",
+        "member_id",
+        "position",
+        "country_code",
+        "group_code"
+      ],
+      "rows": [
+        [
+          108425,
+          840,
+          "DID_NOT_VOTE",
+          "LUX",
+          "RENEW"
+        ],
+        [
+          108425,
+          1394,
+          "AGAINST",
+          "GBR",
+          "RENEW"
+        ]
+      ]
+    },
+    "members": {
+      "columns": [
+        "id",
+        "first_name",
+        "last_name",
+        "country_code",
+        "date_of_birth",
+        "email",
+        "facebook",
+        "twitter"
+      ],
+      "rows": [
+        [
+          840,
+          "Charles",
+          "GOERENS",
+          "LUX",
+          "1952-02-06",
+          "charles.goerens@europarl.europa.eu",
+          "https://www.facebook.com/charles.goerens",
+          "https://twitter.com/CharlesGoerens"
+        ],
+        [
+          1294,
+          "Elio",
+          "DI RUPO",
+          "BEL",
+          null,
+          "elio.dirupo@europarl.europa.eu",
+          null,
+          null
+        ]
+      ]
+    },
+    "oeil_subject_votes": {
+      "columns": [
+        "vote_id",
+        "oeil_subject_code"
+      ],
+      "rows": [
+        [
+          108530,
+          "6.10.04"
+        ],
+        [
+          108531,
+          "6.10.04"
+        ]
+      ]
+    },
+    "oeil_subjects": {
+      "columns": [
+        "code",
+        "label"
+      ],
+      "rows": [
+        [
+          "1",
+          "European citizenship"
+        ],
+        [
+          "1.10",
+          "Fundamental rights in the EU, Charter"
+        ]
+      ]
+    },
+    "responsible_committee_votes": {
+      "columns": [
+        "vote_id",
+        "committee_code"
+      ],
+      "rows": [
+        [
+          108563,
+          "LIBE"
+        ],
+        [
+          108566,
+          "BUDG"
+        ]
+      ]
+    },
+    "votes": {
+      "columns": [
+        "id",
+        "timestamp",
+        "display_title",
+        "reference",
+        "description",
+        "is_main",
+        "procedure_reference",
+        "procedure_title",
+        "procedure_type",
+        "procedure_stage",
+        "count_for",
+        "count_against",
+        "count_abstention",
+        "count_did_not_vote",
+        "result"
+      ],
+      "rows": [
+        [
+          108425,
+          "2019-07-15 17:09:37",
+          "Mardi - demande du groupe GUE/NGL",
+          null,
+          null,
+          0,
+          null,
+          null,
+          null,
+          null,
+          83,
+          142,
+          72,
+          454,
+          null
+        ],
+        [
+          108530,
+          "2019-07-18 11:30:02",
+          "The situation in Venezuela",
+          "RC-B9-0006/2019",
+          "\u00a7 2/1",
+          0,
+          "2019/2730(RSP)",
+          "The situation in Venezuela",
+          "RSP",
+          null,
+          506,
+          58,
+          70,
+          117,
+          null
+        ]
+      ]
+    }
+  },
+  "indexes": [
+    [
+      "idx_member_votes_vote_id",
+      "CREATE INDEX idx_member_votes_vote_id ON member_votes(vote_id)"
+    ],
+    [
+      "idx_member_votes_member_id",
+      "CREATE INDEX idx_member_votes_member_id ON member_votes(member_id)"
+    ],
+    [
+      "idx_votes_timestamp",
+      "CREATE INDEX idx_votes_timestamp ON votes(timestamp)"
+    ],
+    [
+      "idx_votes_procedure_type",
+      "CREATE INDEX idx_votes_procedure_type ON votes(procedure_type)"
+    ],
+    [
+      "idx_group_memberships_member_id",
+      "CREATE INDEX idx_group_memberships_member_id ON group_memberships(member_id)"
+    ],
+    [
+      "idx_group_memberships_group_code",
+      "CREATE INDEX idx_group_memberships_group_code ON group_memberships(group_code)"
+    ],
+    [
+      "idx_eurovoc_concept_votes_vote_id",
+      "CREATE INDEX idx_eurovoc_concept_votes_vote_id ON eurovoc_concept_votes(vote_id)"
+    ],
+    [
+      "idx_oeil_subject_votes_vote_id",
+      "CREATE INDEX idx_oeil_subject_votes_vote_id ON oeil_subject_votes(vote_id)"
+    ],
+    [
+      "idx_geo_area_votes_vote_id",
+      "CREATE INDEX idx_geo_area_votes_vote_id ON geo_area_votes(vote_id)"
+    ],
+    [
+      "idx_responsible_committee_votes_vote_id",
+      "CREATE INDEX idx_responsible_committee_votes_vote_id ON responsible_committee_votes(vote_id)"
+    ]
+  ]
+}
