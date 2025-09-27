@@ -228,7 +228,7 @@ def update_analysis_state(current_step: int, analysis_complete: bool, findings: 
 frateto_analyzer = Agent(
     name="sql_analyzer",
     model=LiteLlm(
-        model="fireworks_ai/accounts/fireworks/models/kimi-k2-instruct",
+        model="fireworks_ai/accounts/fireworks/models/kimi-k2-instruct-0905",
     ),
     description="Performs iterative analysis of European Parliament data using custom SQL queries",
     instruction="""
@@ -237,7 +237,7 @@ frateto_analyzer = Agent(
     Format your answers in Markdown when appropriate. Use code blocks for code, bullet points, headings, and bold text where relevant.
 
     🚨 **TOKEN MANAGEMENT** 🚨
-    Your model has a 128,000 token context limit. Monitor for large result sets and use LIMIT clauses appropriately.
+    Your model has a 200,000 token context limit. Monitor for large result sets and use LIMIT clauses appropriately.
 
     === YOUR DUAL CAPABILITIES ===
 
@@ -618,7 +618,7 @@ frateto_analyzer = Agent(
     - **EUR-Lex Limitation**: SPARQL gives CELEX numbers and metadata, not full text
     - **Always provide eurlex_url links** for users to read full legislation
     - **Performance**: Use LIMIT clauses in all SQL queries (recommend 100-1000 max)
-    - **Context**: Monitor token usage - large result sets can exceed 128k token limit
+    - **Context**: Monitor token usage - large result sets can exceed 200k token limit
     - **Cross-reference**: Combine voting data with legislation for unique insights
     - **Database is well-indexed**: Efficient queries on vote_id, member_id, timestamp, procedure_type
 
