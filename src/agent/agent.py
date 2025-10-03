@@ -634,10 +634,4 @@ frateto_analyzer = Agent(
     output_key="comprehensive_analysis"
 )
 
-frateto_agent = LoopAgent(
-    name="frateto_parliament_legislation_agent",
-    max_iterations=3,
-    sub_agents=[frateto_analyzer]
-)
-
-root_agent = frateto_agent
+root_agent = frateto_analyzer
