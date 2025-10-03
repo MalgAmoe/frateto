@@ -11,7 +11,9 @@ def get_current_date() -> dict:
     """Get the current date for temporal context in analysis.
 
     Returns:
-        Dict containing the current date information
+        Dict with 'current_date', 'year', 'month', 'day', 'formatted_date', and 'explanation'.
+
+    Note: Always returns success - no error cases.
     """
     today = date.today()
     return {
@@ -28,14 +30,12 @@ DB_PATH = "./db_stuff/parliament_votes.db"
 def execute_custom_sql(sql_query: str) -> dict:
     """Execute a custom SQL query against the European Parliament database.
 
-    Use this tool ONLY when analyzing voting patterns, MEP behavior, or
-    parliamentary data. Always include LIMIT clauses for performance.
-
     Args:
-        sql_query: A SELECT SQL query. Must include LIMIT clause for performance.
+        sql_query: A SELECT SQL query to execute. Must be a valid SELECT statement.
+                  Should include appropriate JOINs and LIMIT clauses for performance.
 
     Returns:
-        Dictionary with 'status' ('success' or 'error'), 'results', and 'row_count'.
+        Dict with 'status' ('success' or 'error'), 'results', 'column_names', and 'row_count'.
 
     Security Note: Only SELECT queries are allowed. No INSERT, UPDATE, DELETE, or DDL operations.
     """
@@ -105,21 +105,14 @@ def execute_custom_sql(sql_query: str) -> dict:
 def execute_eurlex_sparql(sparql_query: str) -> dict:
     """Execute SPARQL query against EUR-Lex for EU legislation discovery.
 
-    CAPABILITIES:
-    ✅ Find legislation by CELEX number (e.g., AI Act: 32024R1689)
-    ✅ Search by date ranges and document types
-    ✅ Topic search via EuroVoc concepts
-    ✅ Get basic metadata (CELEX, dates, types)
-
-    LIMITATIONS:
-    ❌ No titles or full text (use EUR-Lex URLs for content)
-    ❌ No legal status information
-
     Args:
         sparql_query: A SPARQL query for EUR-Lex legislation discovery
 
     Returns:
-        Dict containing legislation results with EUR-Lex URLs
+        Dict with 'status' ('success' or 'error'), 'results' (including eurlex_url), and 'row_count'.
+
+    Note: Returns metadata only (CELEX, dates, types). No full text or legal status.
+          Recent legislation may have database lag. Always provide EUR-Lex URLs.
     """
     try:
         endpoint = "http://publications.europa.eu/webapi/rdf/sparql"

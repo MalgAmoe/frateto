@@ -50,6 +50,7 @@ async def chat(request: ChatRequest):
                 word_count += len(escaped_message.split())
                 yield f'0:{escaped_message}\n'
 
+            print(f"session {session_id} mess {user_message} got an answer")
             # Send finish signal after all messages
             yield f'd:{{"finishReason":"stop","usage":{{"promptTokens":10,"completionTokens":{word_count}}}}}\n'
 
