@@ -28,12 +28,14 @@ DB_PATH = "./db_stuff/parliament_votes.db"
 def execute_custom_sql(sql_query: str) -> dict:
     """Execute a custom SQL query against the European Parliament database.
 
+    Use this tool ONLY when analyzing voting patterns, MEP behavior, or
+    parliamentary data. Always include LIMIT clauses for performance.
+
     Args:
-        sql_query: A SELECT SQL query to execute. Must be a valid SELECT statement.
-                  Should include appropriate JOINs and LIMIT clauses for performance.
+        sql_query: A SELECT SQL query. Must include LIMIT clause for performance.
 
     Returns:
-        Dict containing query results, column names, and metadata
+        Dictionary with 'status' ('success' or 'error'), 'results', and 'row_count'.
 
     Security Note: Only SELECT queries are allowed. No INSERT, UPDATE, DELETE, or DDL operations.
     """
@@ -42,7 +44,9 @@ def execute_custom_sql(sql_query: str) -> dict:
         query_upper = sql_query.strip().upper()
         if not query_upper.startswith('SELECT'):
             return {
-                "error": "Only SELECT queries are allowed",
+                "status": "error",
+                "error_message": "Only SELECT queries are allowed",
+                "error_type": "SecurityError",
                 "query": sql_query
             }
 
@@ -51,7 +55,9 @@ def execute_custom_sql(sql_query: str) -> dict:
         for keyword in dangerous_keywords:
             if keyword in query_upper:
                 return {
-                    "error": f"Query contains forbidden keyword: {keyword}",
+                    "status": "error",
+                    "error_message": f"Query contains forbidden keyword: {keyword}",
+                    "error_type": "SecurityError",
                     "query": sql_query
                 }
 
@@ -73,22 +79,26 @@ def execute_custom_sql(sql_query: str) -> dict:
             formatted_results.append(dict(zip(column_names, row)))
 
         return {
-            "success": True,
+            "status": "success",
             "query": sql_query,
             "results": formatted_results,
             "column_names": column_names,
             "row_count": len(results),
-            "explanation": f"Custom SQL query returned {len(results)} rows with columns: {', '.join(column_names)}"
+            "explanation": f"Query returned {len(results)} rows with columns: {', '.join(column_names)}"
         }
 
     except sqlite3.Error as e:
         return {
-            "error": f"SQL error: {str(e)}",
+            "status": "error",
+            "error_message": str(e),
+            "error_type": "SQLError",
             "query": sql_query
         }
     except Exception as e:
         return {
-            "error": f"Database error: {str(e)}",
+            "status": "error",
+            "error_message": str(e),
+            "error_type": type(e).__name__,
             "query": sql_query
         }
 
@@ -124,7 +134,9 @@ def execute_eurlex_sparql(sparql_query: str) -> dict:
 
         if not has_valid_query_type:
             return {
-                "error": "Only SELECT, CONSTRUCT, ASK, or DESCRIBE SPARQL queries allowed",
+                "status": "error",
+                "error_message": "Only SELECT, CONSTRUCT, ASK, or DESCRIBE SPARQL queries allowed",
+                "error_type": "ValidationError",
                 "query": sparql_query,
                 "note": "Queries with PREFIX statements are supported"
             }
@@ -178,7 +190,7 @@ def execute_eurlex_sparql(sparql_query: str) -> dict:
                 formatted_results.append(row)
 
             return {
-                "success": True,
+                "status": "success",
                 "query": sparql_query,
                 "results": formatted_results,
                 "row_count": len(formatted_results),
@@ -187,7 +199,7 @@ def execute_eurlex_sparql(sparql_query: str) -> dict:
             }
         else:
             return {
-                "success": True,
+                "status": "success",
                 "query": sparql_query,
                 "results": [],
                 "row_count": 0,
@@ -196,28 +208,34 @@ def execute_eurlex_sparql(sparql_query: str) -> dict:
 
     except requests.RequestException as e:
         return {
-            "error": f"EUR-Lex API error: {str(e)}",
+            "status": "error",
+            "error_message": str(e),
+            "error_type": "APIError",
             "query": sparql_query
         }
     except Exception as e:
         return {
-            "error": f"SPARQL error: {str(e)}",
+            "status": "error",
+            "error_message": str(e),
+            "error_type": type(e).__name__,
             "query": sparql_query
         }
 
 def update_analysis_state(current_step: int, analysis_complete: bool, findings: str) -> dict:
     """Update the analysis state variables.
 
+    Use this tool to track multi-step analysis progress and signal completion.
+
     Args:
         current_step: The current step number (increment by 1 each call)
         analysis_complete: True if analysis is complete, False if more steps needed
-        findings: Optional summary of current findings (for tracking progress)
+        findings: Summary of current findings (for tracking progress)
 
     Returns:
-        Dict confirming the state update with current progress
+        Dict with 'status', 'step', 'complete', and progress information
     """
     return {
-        "success": True,
+        "status": "success",
         "step": current_step,
         "complete": analysis_complete,
         "findings": findings,
